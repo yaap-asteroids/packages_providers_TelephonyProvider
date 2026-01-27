@@ -419,10 +419,19 @@ public class ProviderUtil {
                 getOtpPendingSqlFilter(), Telephony.Sms.DATE, pendingOtpCutoff));
         final String hash = PackageBasedTokenUtil.generatePackageBasedToken(
                 context.getPackageManager(), callingPackage, userHandle);
+        var packageHashes = new ArrayList<String>();
         if (hash != null) {
-            where.append(String.format(Locale.US, " OR (%s LIKE '%%%s%%')",
-                    Telephony.Sms.BODY, hash));
+            packageHashes.add(hash);
         }
+
+        SmsProviderExt.maybeGetGmsCoreDependantPackageHashes(context,
+                        callingPackage, userHandle, packageHashes);
+
+        for (String packageHash : packageHashes) {
+            where.append(String.format(Locale.US, " OR (%s LIKE '%%%s%%')",
+                    Telephony.Sms.BODY, packageHash));
+        }
+
         // Note: For backwards compatibility, we allow packages with
         // targetSdk < CINNAMON_BUN to read generic OTP messages.
         if (android.view.flags.Flags.redactOtpAppCompatApi()
